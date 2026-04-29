@@ -1,4 +1,4 @@
-const GoogleAI = require("@google/genai");
+const fetch = require('node-fetch');
 
 exports.handler = async function(event, context) {
   const headers = {
@@ -14,29 +14,32 @@ exports.handler = async function(event, context) {
   try {
     const body = JSON.parse(event.body);
     const userMessage = body.message;
+    const apiKey = process.env.GEMINI_API_KEY;
 
-    // --- THE MASTER KEY LOGIC ---
-    // We look for GoogleGenAI in three different possible locations
-    const GenAIClass = GoogleAI.GoogleGenAI || (GoogleAI.default && GoogleAI.default.GoogleGenAI) || GoogleAI;
-    const genAI = new GenAIClass(process.env.GEMINI_API_KEY);
+    // We speak directly to Google's API endpoint
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `You are Meowgen, a Zen cat chatbot inspired by Dogen. Speak with calm wisdom and koans. Purr occasionally.\n\nUser: ${userMessage}`
+          }]
+        }]
+      })
+    });
+
+    const data = await response.json();
     
-    // We check if getGenerativeModel exists, if not, we try to find it
-    const model = genAI.getGenerativeModel ? genAI.getGenerativeModel({ model: "gemini-1.5-flash" }) : null;
-
-    if (!model) {
-        throw new Error("Could not find the generative model function.");
-    }
-
-    const systemInstruction = "You are Meowgen, a Zen cat chatbot inspired by the teachings of Dogen. You speak with calm, peaceful wisdom, offering short, feline-inspired koans and guidance on the present moment. Purr occasionally.";
-    const prompt = `${systemInstruction}\n\nUser: ${userMessage}`;
-
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    // Extract the text from Google's complex response package
+    const aiText = data.candidates[0].content.parts[0].text;
 
     return {
       statusCode: 200,
       headers, 
-      body: JSON.stringify({ reply: text }),
+      body: JSON.stringify({ reply: aiText }),
     };
   } catch (error) {
     console.error("Zen mind interrupted:", error);
