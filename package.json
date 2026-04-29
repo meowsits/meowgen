@@ -1,8 +1,7 @@
 {
   "name": "meowgen",
   "version": "1.0.0",
-  "description": "A Zen cat chatbot sanctuary",
   "dependencies": {
-    "@google/genai": "^0.11.0"
+    "node-fetch": "^2.6.7"
   }
 }
