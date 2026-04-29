@@ -160,4 +160,64 @@
     </div>
 
     <script>
-        const chatInput = document.getElementById('chat-input
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatLog = document.getElementById('chat-log');
+
+        function appendMessage(text, sender) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message');
+            msgDiv.classList.add(sender === 'user' ? 'user-msg' : 'bot-msg');
+            msgDiv.innerText = text;
+            chatLog.appendChild(msgDiv);
+            chatLog.scrollTop = chatLog.scrollHeight; 
+        }
+
+        async function askMeowgen(userText) {
+            appendMessage(userText, 'user');
+            chatInput.value = '';
+
+            const typingDiv = document.createElement('div');
+            typingDiv.classList.add('message', 'bot-msg');
+            typingDiv.innerText = '*Meditating on your words...*';
+            typingDiv.id = 'typing-indicator';
+            chatLog.appendChild(typingDiv);
+            chatLog.scrollTop = chatLog.scrollHeight;
+
+            try {
+                const response = await fetch('/.netlify/functions/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: userText })
+                });
+                
+                const data = await response.json();
+                
+                document.getElementById('typing-indicator').remove();
+                
+                if (data.reply) {
+                    appendMessage(data.reply, 'bot');
+                } else if (data.error) {
+                    appendMessage(data.error, 'bot');
+                }
+            } catch (error) {
+                console.error("Connection lost.", error);
+                document.getElementById('typing-indicator').remove();
+                appendMessage("*A gentle breeze disrupts the connection... Please try again.*", 'bot');
+            }
+        }
+
+        sendBtn.addEventListener('click', () => {
+            const text = chatInput.value.trim();
+            if (text) askMeowgen(text);
+        });
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const text = chatInput.value.trim();
+                if (text) askMeowgen(text);
+            }
+        });
+    </script>
+</body>
+</html>
