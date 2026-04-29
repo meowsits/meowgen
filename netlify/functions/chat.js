@@ -15,18 +15,23 @@ exports.handler = async function(event, context) {
     const body = JSON.parse(event.body);
     const userMessage = body.message;
 
-    // We check if the library is nested or direct (handles different versions)
-    const GenAIClass = GoogleAI.GoogleGenAI || GoogleAI;
+    // --- THE MASTER KEY LOGIC ---
+    // We look for GoogleGenAI in three different possible locations
+    const GenAIClass = GoogleAI.GoogleGenAI || (GoogleAI.default && GoogleAI.default.GoogleGenAI) || GoogleAI;
     const genAI = new GenAIClass(process.env.GEMINI_API_KEY);
     
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // We check if getGenerativeModel exists, if not, we try to find it
+    const model = genAI.getGenerativeModel ? genAI.getGenerativeModel({ model: "gemini-1.5-flash" }) : null;
+
+    if (!model) {
+        throw new Error("Could not find the generative model function.");
+    }
 
     const systemInstruction = "You are Meowgen, a Zen cat chatbot inspired by the teachings of Dogen. You speak with calm, peaceful wisdom, offering short, feline-inspired koans and guidance on the present moment. Purr occasionally.";
     const prompt = `${systemInstruction}\n\nUser: ${userMessage}`;
 
     const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const text = result.response.text();
 
     return {
       statusCode: 200,
@@ -35,7 +40,6 @@ exports.handler = async function(event, context) {
     };
   } catch (error) {
     console.error("Zen mind interrupted:", error);
-    
     return {
       statusCode: 200, 
       headers,
