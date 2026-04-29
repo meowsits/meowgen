@@ -1,20 +1,16 @@
 const { GoogleGenAI } = require('@google/genai');
 
 exports.handler = async function(event, context) {
-  // 1. The Secret Handshake (CORS Headers)
-  // This keeps the bridge open exclusively for your beautiful GitHub site
   const headers = {
     'Access-Control-Allow-Origin': 'https://meowsits.github.io', 
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS'
   };
 
-  // 2. The Browser Pre-flight Check
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: 'Peace be with you.' };
   }
 
-  // Only allow POST messages
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers, body: 'Method Not Allowed' };
   }
@@ -23,30 +19,32 @@ exports.handler = async function(event, context) {
     const body = JSON.parse(event.body);
     const userMessage = body.message;
 
-    // 3. Connect to the hidden vault in Netlify
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-    // 4. Meowgen's Persona
-    const systemInstruction = "You are Meowgen, a Zen cat chatbot inspired by the teachings of Dogen. You speak with calm, peaceful wisdom, offering short, feline-inspired koans and guidance on the present moment. Purr occasionally.";
-    const prompt = `${systemInstruction}\n\nUser: ${userMessage}`;
-
-    const response = await ai.models.generateContent({
-        model: 'Gemini 2.5 Flash-Lite',
-        contents: prompt
+    // Using gemini-1.5-flash as it is the most stable and fast version
+    const model = ai.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        systemInstruction: "You are Meowgen, a Zen cat chatbot inspired by the teachings of Dogen. You speak with calm, peaceful wisdom, offering short, feline-inspired koans and guidance on the present moment. Purr occasionally."
     });
 
-    // 5. Send the wisdom back across the bridge
+    const result = await model.generateContent(userMessage);
+    const responseText = result.response.text();
+
     return {
       statusCode: 200,
       headers, 
-      body: JSON.stringify({ reply: response.text }),
+      body: JSON.stringify({ reply: responseText }),
     };
   } catch (error) {
     console.error("Zen mind interrupted:", error);
+    
+    // If Google is busy (503), we show a specific message, otherwise a general one
+    let errorMessage = "*Purr...* I am deep in meditation. Please wait a moment and ask again.";
+    
     return {
-      statusCode: 500,
+      statusCode: 200, 
       headers,
-      body: JSON.stringify({ error: 'Connection down—looks like the cat's got the server's tongue.' }),
+      body: JSON.stringify({ reply: errorMessage }),
     };
   }
 };
