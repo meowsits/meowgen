@@ -1,1 +1,20 @@
-Work in progress
+async function askMeowgen() {
+    const text = chatInput.value.trim();
+    if (!text) return;
+
+    appendMessage(text, 'user');
+    chatInput.value = '';
+
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text })
+        });
+
+        const data = await response.json();
+        appendMessage(data.reply, 'bot');
+    } catch (e) {
+        appendMessage("*The connection was lost in the garden.*", 'bot');
+    }
+}
