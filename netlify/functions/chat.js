@@ -31,7 +31,7 @@ exports.handler = async function(event, context) {
     const prompt = `${systemInstruction}\n\nUser: ${userMessage}`;
 
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'Gemini 2.5 Flash-Lite',
         contents: prompt
     });
 
