@@ -46,7 +46,7 @@ exports.handler = async function(event, context) {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: '*Purr...* I am deep in meditation at the moment. Please try again soon.' }),
+      body: JSON.stringify({ error: 'Connection down—looks like the cat's got the server's tongue.' }),
     };
   }
 };
