@@ -1,4 +1,4 @@
-const { GoogleGenAI } = require("@google/genai");
+const GoogleAI = require("@google/genai");
 
 exports.handler = async function(event, context) {
   const headers = {
@@ -15,18 +15,18 @@ exports.handler = async function(event, context) {
     const body = JSON.parse(event.body);
     const userMessage = body.message;
 
-    // Direct initialization
-    const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
+    // We check if the library is nested or direct (handles different versions)
+    const GenAIClass = GoogleAI.GoogleGenAI || GoogleAI;
+    const genAI = new GenAIClass(process.env.GEMINI_API_KEY);
     
-    // We call the model by passing the name directly into the method
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const systemInstruction = "You are Meowgen, a Zen cat chatbot inspired by the teachings of Dogen. You speak with calm, peaceful wisdom, offering short, feline-inspired koans and guidance on the present moment. Purr occasionally.";
     const prompt = `${systemInstruction}\n\nUser: ${userMessage}`;
 
-    // Universal generation call
     const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const response = await result.response;
+    const text = response.text();
 
     return {
       statusCode: 200,
@@ -36,7 +36,6 @@ exports.handler = async function(event, context) {
   } catch (error) {
     console.error("Zen mind interrupted:", error);
     
-    // Fallback for the "High Demand" 503 error or any other library hiccups
     return {
       statusCode: 200, 
       headers,
